@@ -5,6 +5,5 @@ CREATE TABLE IF NOT EXISTS public.users (
     last_name VARCHAR(100) not null,
     password varchar(255) not null,
     email VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    black_listed boolean not null
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
