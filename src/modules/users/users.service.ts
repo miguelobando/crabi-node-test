@@ -69,4 +69,18 @@ export class UsersService {
 
     return response;
   }
+
+  async getInfo(id: string) {
+    const user = await this.userRepo.findOneBy({
+      id,
+    });
+
+    if (!user) return null;
+
+    // Just to avoid the warning and extra code
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+
+    return userWithoutPassword;
+  }
 }

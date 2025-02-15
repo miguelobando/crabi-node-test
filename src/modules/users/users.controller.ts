@@ -5,6 +5,9 @@ import {
   HttpException,
   HttpStatus,
   Res,
+  Get,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './interfaces/create-user.dto';
@@ -12,7 +15,12 @@ import { PLDService } from './pld.service';
 import { Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './interfaces/login-user.dto';
-import { LoginDocs, RegisterDocs } from './docs/userController.docs';
+import {
+  GetUserInfoDocs,
+  LoginDocs,
+  RegisterDocs,
+} from './docs/userController.docs';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Users')
 @Controller('users')
@@ -65,5 +73,12 @@ export class UsersController {
     }
 
     return res.status(HttpStatus.OK).json(result);
+  }
+
+  @Get('/user-info')
+  @UseGuards(JwtAuthGuard)
+  @GetUserInfoDocs()
+  async getInfo(@Req() req) {
+    return this.usersService.getInfo(req.user.sub);
   }
 }

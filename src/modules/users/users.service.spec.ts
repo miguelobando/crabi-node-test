@@ -126,4 +126,41 @@ describe('UsersService', () => {
       expect(result.token).toBeNull();
     });
   });
+
+  describe('getInfo', () => {
+    const mockUser = {
+      id: '1',
+      email: 'test@example.com',
+      password: 'password123',
+      firstName: 'Test',
+      lastName: 'User',
+      createdAt: new Date(),
+    };
+
+    it('should return user info without password', async () => {
+      mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+
+      const result = await usersService.getInfo('1');
+
+      expect(result).toEqual({
+        id: mockUser.id,
+        email: mockUser.email,
+        firstName: mockUser.firstName,
+        lastName: mockUser.lastName,
+        createdAt: mockUser.createdAt,
+      });
+
+      expect(result).not.toHaveProperty('password');
+      expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({ id: '1' });
+    });
+
+    it('should handle when user is not found', async () => {
+      mockUserRepository.findOneBy.mockResolvedValue(null);
+
+      const result = await usersService.getInfo('999');
+
+      expect(result).toBeNull();
+      expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({ id: '999' });
+    });
+  });
 });

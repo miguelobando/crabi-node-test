@@ -6,11 +6,15 @@ import { CreateUserDto } from './interfaces/create-user.dto';
 import { HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { User } from '../../entities/users.entity';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let usersService: UsersService;
   let pldService: PLDService;
+  // let jwtService: JwtService;
 
   const mockResponse = () => {
     const res: Partial<Response> = {};
@@ -35,6 +39,20 @@ describe('UsersController', () => {
             verifyUser: jest.fn(),
           },
         },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn(),
+            verify: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('test-secret'),
+          },
+        },
+        JwtAuthGuard,
       ],
     }).compile();
 
