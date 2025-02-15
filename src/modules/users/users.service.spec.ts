@@ -3,6 +3,8 @@ import { UsersService } from './users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../../entities/users.entity';
 import { CreateUserDto } from './interfaces/create-user.dto';
+import { JwtService } from '@nestjs/jwt';
+import { LoginDto } from './interfaces/login-user.dto';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -13,6 +15,10 @@ describe('UsersService', () => {
     save: jest.fn(),
   };
 
+  const mockJwtService = {
+    sign: jest.fn(),
+  };
+
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -20,6 +26,10 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: mockUserRepository,
+        },
+        {
+          provide: JwtService,
+          useValue: mockJwtService,
         },
       ],
     }).compile();
@@ -58,6 +68,62 @@ describe('UsersService', () => {
       expect(result.success).toBe(false);
       expect(result.data).toBeNull();
       expect(result.message).toBe('User already created');
+    });
+  });
+
+  describe('login', () => {
+    const loginDto: LoginDto = {
+      email: 'test@example.com',
+      password: 'password123',
+    };
+
+    const mockUser = {
+      id: '1',
+      email: 'test@example.com',
+      password: 'password123',
+      firstName: 'Test',
+      lastName: 'User',
+    };
+
+    it('should return user data and token when credentials are valid', async () => {
+      mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+      mockJwtService.sign.mockReturnValue('mock.jwt.token');
+
+      const result = await usersService.login(loginDto);
+
+      expect(result.id).toBe(mockUser.id);
+      expect(result.firstName).toBe(mockUser.firstName);
+      expect(result.lastName).toBe(mockUser.lastName);
+      expect(result.token).toBe('mock.jwt.token');
+      expect(mockJwtService.sign).toHaveBeenCalledWith({
+        sub: mockUser.id,
+        email: mockUser.email,
+      });
+    });
+
+    it('should return null values when user is not found', async () => {
+      mockUserRepository.findOneBy.mockResolvedValue(null);
+
+      const result = await usersService.login(loginDto);
+
+      expect(result.id).toBeNull();
+      expect(result.firstName).toBeNull();
+      expect(result.lastName).toBeNull();
+      expect(result.token).toBeNull();
+    });
+
+    it('should return null values when password is incorrect', async () => {
+      mockUserRepository.findOneBy.mockResolvedValue({
+        ...mockUser,
+        password: 'different-password',
+      });
+
+      const result = await usersService.login(loginDto);
+
+      expect(result.id).toBeNull();
+      expect(result.firstName).toBeNull();
+      expect(result.lastName).toBeNull();
+      expect(result.token).toBeNull();
     });
   });
 });

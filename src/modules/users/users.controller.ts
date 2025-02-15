@@ -11,6 +11,7 @@ import { CreateUserDto } from './interfaces/create-user.dto';
 import { PLDService } from './pld.service';
 import { Response } from 'express';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { LoginDto } from './interfaces/login-user.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -62,5 +63,18 @@ export class UsersController {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+  }
+
+  @Post('/login')
+  async login(@Body() data: LoginDto, @Res() res: Response) {
+    const result = await this.usersService.login(data);
+
+    if (result.id == null) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({
+        message: 'Invalid credentials',
+      });
+    }
+
+    return res.status(HttpStatus.OK).json(result);
   }
 }
