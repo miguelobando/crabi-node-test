@@ -9,12 +9,12 @@ import { User } from '../../entities/users.entity';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { LoginDto } from './interfaces/login-user.dto';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let usersService: UsersService;
   let pldService: PLDService;
-  // let jwtService: JwtService;
 
   const mockResponse = () => {
     const res: Partial<Response> = {};
@@ -31,6 +31,8 @@ describe('UsersController', () => {
           provide: UsersService,
           useValue: {
             create: jest.fn(),
+            login: jest.fn(),
+            getInfo: jest.fn(), // Añadimos el mock de getInfo aquí
           },
         },
         {
@@ -143,6 +145,94 @@ describe('UsersController', () => {
 
       expect(response.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
       expect(response.json).toHaveBeenCalledWith(serviceResponse);
+    });
+  });
+
+  describe('Login', () => {
+    const loginDto: LoginDto = {
+      email: 'miguel@gmail.com',
+      password: 'password123',
+    };
+
+    const mockLoginResponse = {
+      id: '123',
+      firstName: 'miguel',
+      lastName: 'obando',
+      token: 'asdfasdf',
+    };
+
+    it('should login successfully', async () => {
+      const response = mockResponse();
+
+      jest.spyOn(usersService, 'login').mockResolvedValue(mockLoginResponse);
+
+      await controller.login(loginDto, response);
+
+      expect(response.status).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(response.json).toHaveBeenCalledWith(mockLoginResponse);
+      expect(usersService.login).toHaveBeenCalledWith(loginDto);
+    });
+
+    it('should return unauthorized for invalid credentials', async () => {
+      const response = mockResponse();
+      const invalidLoginResponse = {
+        id: null,
+        firstName: null,
+        lastName: null,
+        token: null,
+      };
+
+      jest.spyOn(usersService, 'login').mockResolvedValue(invalidLoginResponse);
+
+      await controller.login(loginDto, response);
+
+      expect(response.status).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
+      expect(response.json).toHaveBeenCalledWith({
+        message: 'Invalid credentials',
+      });
+      expect(usersService.login).toHaveBeenCalledWith(loginDto);
+    });
+  });
+
+  describe('getInfo', () => {
+    const mockUserResponse = {
+      id: '12a50a13-10e7-4093-8d15-ed1da6dfce6a',
+      firstName: 'miguel',
+      lastName: 'lopez',
+      email: 'miguel@gmail.com',
+      createdAt: new Date('2025-02-15T03:37:23.053Z'),
+    };
+
+    it('should get user info successfully', async () => {
+      const mockRequest = {
+        user: {
+          sub: mockUserResponse.id,
+          email: mockUserResponse.email,
+        },
+      };
+
+      jest.spyOn(usersService, 'getInfo').mockResolvedValue(mockUserResponse);
+
+      const result = await controller.getInfo(mockRequest);
+
+      expect(result).toEqual(mockUserResponse);
+      expect(usersService.getInfo).toHaveBeenCalledWith(mockRequest.user.sub);
+    });
+
+    it('should return null when user is not found', async () => {
+      const mockRequest = {
+        user: {
+          sub: 'non-existent-id',
+          email: 'test@example.com',
+        },
+      };
+
+      jest.spyOn(usersService, 'getInfo').mockResolvedValue(null);
+
+      const result = await controller.getInfo(mockRequest);
+
+      expect(result).toBeNull();
+      expect(usersService.getInfo).toHaveBeenCalledWith(mockRequest.user.sub);
     });
   });
 });
