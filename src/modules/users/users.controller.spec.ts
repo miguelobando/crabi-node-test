@@ -123,7 +123,7 @@ describe('UsersController', () => {
 
       await controller.create(createUserDto, response);
 
-      expect(response.status).toHaveBeenCalledWith(HttpStatus.CREATED);
+      expect(response.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
       expect(response.json).toHaveBeenCalledWith(serviceResponse);
     });
   });
