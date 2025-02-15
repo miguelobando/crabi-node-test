@@ -1,0 +1,62 @@
+{
+	"info": {
+		"_postman_id": "39d6d77f-997b-4548-83eb-3abd5c269224",
+		"name": "Crabi Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "710721",
+		"_collection_link": "https://crabi-test-team.postman.co/workspace/67337118-c83b-4623-b871-01fbf356b1dc/collection/710721-39d6d77f-997b-4548-83eb-3abd5c269224?action=share&source=collection_link&creator=710721"
+	},
+	"item": [
+		{
+			"name": "Register user",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"firstName\": \"miguel\",\n\"lastName\": \"obando\",\n  \"email\": \"miguel@megaemail.com\",\n\"password\": \"1234\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:3000/users/register"
+			},
+			"response": []
+		},
+		{
+			"name": "Login User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n     \"email\": \"miguel@megaemail.com\",\n    \"password\": \"1234\"\n\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:3000/users/login"
+			},
+			"response": []
+		},
+		{
+			"name": "Get user (Probablemente se deba cambiar el token)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzJiZmI1Mi1kMmUyLTQxMDItOWE1Ni0yMjIzZjNiNjcwNGMiLCJlbWFpbCI6ImFsZWphbmRyb0BlbWFpbC5jb20iLCJpYXQiOjE3Mzk2NTE4MTEsImV4cCI6MTczOTY1NTQxMX0.4NlQF2YHj-ioB3j3fsIt827Gle-xOBwm_d6O9sfVUQI",
+						"type": "text"
+					}
+				],
+				"url": "localhost:3000/users/user-info"
+			},
+			"response": []
+		}
+	]
+}
