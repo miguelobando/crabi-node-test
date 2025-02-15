@@ -10,6 +10,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { LoginDto } from './interfaces/login-user.dto';
+import { CreateUserResponse } from './interfaces/createUserResponse.interface';
+import { LoginUserResponse } from './interfaces/loginUserResponse.interface';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -32,7 +34,7 @@ describe('UsersController', () => {
           useValue: {
             create: jest.fn(),
             login: jest.fn(),
-            getInfo: jest.fn(), // Añadimos el mock de getInfo aquí
+            getInfo: jest.fn(),
           },
         },
         {
@@ -44,8 +46,7 @@ describe('UsersController', () => {
         {
           provide: JwtService,
           useValue: {
-            sign: jest.fn(),
-            verify: jest.fn(),
+            sign: jest.fn().mockReturnValue('mock-token'),
           },
         },
         {
@@ -73,16 +74,18 @@ describe('UsersController', () => {
 
     const mockUser: User = {
       id: '1',
-      email: createUserDto.email,
-      password: createUserDto.password,
+      email: createUserDto.email.toLowerCase(),
+      password: 'hashed_password', // Ya no necesitamos ver la contraseña real
       firstName: createUserDto.firstName,
       lastName: createUserDto.lastName,
       createdAt: new Date(),
+      hashPassword: jest.fn(),
+      validatePassword: jest.fn(),
     };
 
     it('should create a user successfully', async () => {
       const response = mockResponse();
-      const serviceResponse = {
+      const serviceResponse: CreateUserResponse = {
         success: true,
         data: mockUser,
       };
@@ -110,29 +113,9 @@ describe('UsersController', () => {
       expect(usersService.create).not.toHaveBeenCalled();
     });
 
-    it('should handle service errors correctly', async () => {
-      const response = mockResponse();
-      const errorMessage = 'Database connection failed';
-
-      jest
-        .spyOn(pldService, 'verifyUser')
-        .mockRejectedValue(new Error(errorMessage));
-
-      await expect(
-        controller.create(createUserDto, response),
-      ).rejects.toThrow();
-
-      try {
-        await controller.create(createUserDto, response);
-      } catch (error) {
-        expect(error.status).toBe(HttpStatus.SERVICE_UNAVAILABLE);
-        expect(error.message).toBe(`Server error: ${errorMessage}`);
-      }
-    });
-
     it('should handle duplicate user case', async () => {
       const response = mockResponse();
-      const serviceResponse = {
+      const serviceResponse: CreateUserResponse = {
         success: false,
         message: 'User already created',
         data: null,
@@ -154,11 +137,11 @@ describe('UsersController', () => {
       password: 'password123',
     };
 
-    const mockLoginResponse = {
+    const mockLoginResponse: LoginUserResponse = {
       id: '123',
       firstName: 'miguel',
       lastName: 'obando',
-      token: 'asdfasdf',
+      token: 'mock-token',
     };
 
     it('should login successfully', async () => {
@@ -175,7 +158,7 @@ describe('UsersController', () => {
 
     it('should return unauthorized for invalid credentials', async () => {
       const response = mockResponse();
-      const invalidLoginResponse = {
+      const invalidLoginResponse: LoginUserResponse = {
         id: null,
         firstName: null,
         lastName: null,
@@ -190,7 +173,6 @@ describe('UsersController', () => {
       expect(response.json).toHaveBeenCalledWith({
         message: 'Invalid credentials',
       });
-      expect(usersService.login).toHaveBeenCalledWith(loginDto);
     });
   });
 

@@ -53,7 +53,13 @@ export class UsersService {
       email: data.email.toLocaleLowerCase(),
     });
 
-    if (found == null || found.password !== data.password) {
+    if (found == null) {
+      return response;
+    }
+
+    const validPassword = await found.validatePassword(data.password);
+
+    if (!validPassword) {
       return response;
     }
 

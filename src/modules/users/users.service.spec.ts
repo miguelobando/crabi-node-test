@@ -45,22 +45,40 @@ describe('UsersService', () => {
       lastName: 'User',
     };
 
+    const mockUser = {
+      id: '1',
+      email: createUserDto.email.toLowerCase(),
+      password: 'hashed_password',
+      firstName: createUserDto.firstName,
+      lastName: createUserDto.lastName,
+      createdAt: new Date(),
+      hashPassword: jest.fn(),
+      validatePassword: jest.fn(),
+    };
+
     it('should create a new user successfully', async () => {
       mockUserRepository.findOneBy.mockResolvedValue(null);
-      mockUserRepository.create.mockReturnValue(createUserDto);
-      mockUserRepository.save.mockResolvedValue({ id: 1, ...createUserDto });
+      mockUserRepository.create.mockReturnValue({
+        ...mockUser,
+        hashPassword: jest.fn(),
+      });
+      mockUserRepository.save.mockResolvedValue(mockUser);
 
       const result = await usersService.create(createUserDto);
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual({ id: 1, ...createUserDto });
+      expect(result.data).toEqual(mockUser);
       expect(result.message).toBeUndefined();
+      expect(mockUserRepository.create).toHaveBeenCalledWith({
+        ...createUserDto,
+      });
     });
 
     it('should return error when user email already exists', async () => {
-      mockUserRepository.findOneBy.mockResolvedValue({
-        id: 1,
+      mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+      mockUserRepository.create.mockReturnValue({
         ...createUserDto,
+        hashPassword: jest.fn(),
       });
 
       const result = await usersService.create(createUserDto);
@@ -68,6 +86,29 @@ describe('UsersService', () => {
       expect(result.success).toBe(false);
       expect(result.data).toBeNull();
       expect(result.message).toBe('User already created');
+    });
+
+    it('should convert email to lowercase when creating user', async () => {
+      const upperCaseEmailDto = {
+        ...createUserDto,
+        email: 'TEST@EXAMPLE.COM',
+      };
+
+      mockUserRepository.findOneBy.mockResolvedValue(null);
+      mockUserRepository.create.mockReturnValue({
+        ...mockUser,
+        email: upperCaseEmailDto.email.toLowerCase(),
+        hashPassword: jest.fn(),
+      });
+      mockUserRepository.save.mockResolvedValue({
+        ...mockUser,
+        email: upperCaseEmailDto.email.toLowerCase(),
+      });
+
+      const result = await usersService.create(upperCaseEmailDto);
+
+      expect(result.success).toBe(true);
+      expect(result.data.email).toBe(upperCaseEmailDto.email.toLowerCase());
     });
   });
 
@@ -80,13 +121,15 @@ describe('UsersService', () => {
     const mockUser = {
       id: '1',
       email: 'test@example.com',
-      password: 'password123',
+      password: 'hashed_password',
       firstName: 'Test',
       lastName: 'User',
+      validatePassword: jest.fn(),
     };
 
     it('should return user data and token when credentials are valid', async () => {
       mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+      mockUser.validatePassword.mockResolvedValue(true);
       mockJwtService.sign.mockReturnValue('mock.jwt.token');
 
       const result = await usersService.login(loginDto);
@@ -95,6 +138,7 @@ describe('UsersService', () => {
       expect(result.firstName).toBe(mockUser.firstName);
       expect(result.lastName).toBe(mockUser.lastName);
       expect(result.token).toBe('mock.jwt.token');
+      expect(mockUser.validatePassword).toHaveBeenCalledWith(loginDto.password);
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         sub: mockUser.id,
         email: mockUser.email,
@@ -113,10 +157,8 @@ describe('UsersService', () => {
     });
 
     it('should return null values when password is incorrect', async () => {
-      mockUserRepository.findOneBy.mockResolvedValue({
-        ...mockUser,
-        password: 'different-password',
-      });
+      mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+      mockUser.validatePassword.mockResolvedValue(false);
 
       const result = await usersService.login(loginDto);
 
@@ -124,6 +166,24 @@ describe('UsersService', () => {
       expect(result.firstName).toBeNull();
       expect(result.lastName).toBeNull();
       expect(result.token).toBeNull();
+      expect(mockUser.validatePassword).toHaveBeenCalledWith(loginDto.password);
+    });
+
+    it('should convert email to lowercase when logging in', async () => {
+      const upperCaseLoginDto = {
+        ...loginDto,
+        email: 'TEST@EXAMPLE.COM',
+      };
+
+      mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+      mockUser.validatePassword.mockResolvedValue(true);
+      mockJwtService.sign.mockReturnValue('mock.jwt.token');
+
+      await usersService.login(upperCaseLoginDto);
+
+      expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({
+        email: upperCaseLoginDto.email.toLowerCase(),
+      });
     });
   });
 
@@ -131,7 +191,7 @@ describe('UsersService', () => {
     const mockUser = {
       id: '1',
       email: 'test@example.com',
-      password: 'password123',
+      password: 'hashed_password',
       firstName: 'Test',
       lastName: 'User',
       createdAt: new Date(),
@@ -142,14 +202,10 @@ describe('UsersService', () => {
 
       const result = await usersService.getInfo('1');
 
-      expect(result).toEqual({
-        id: mockUser.id,
-        email: mockUser.email,
-        firstName: mockUser.firstName,
-        lastName: mockUser.lastName,
-        createdAt: mockUser.createdAt,
-      });
+      const expectedUser = { ...mockUser };
+      delete expectedUser.password;
 
+      expect(result).toEqual(expectedUser);
       expect(result).not.toHaveProperty('password');
       expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({ id: '1' });
     });
