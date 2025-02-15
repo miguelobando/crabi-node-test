@@ -10,8 +10,9 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './interfaces/create-user.dto';
 import { PLDService } from './pld.service';
 import { Response } from 'express';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './interfaces/login-user.dto';
+import { LoginDocs, RegisterDocs } from './docs/userController.docs';
 
 @ApiTags('Users')
 @Controller('users')
@@ -22,20 +23,7 @@ export class UsersController {
   ) {}
 
   @Post('/register')
-  @ApiOperation({ summary: 'Create new user' })
-  @ApiBody({ type: CreateUserDto })
-  @ApiResponse({
-    status: 201,
-    description: 'User has been successfully created.',
-  })
-  @ApiResponse({
-    status: 406,
-    description: 'User is blacklisted.',
-  })
-  @ApiResponse({
-    status: 503,
-    description: 'Service unavailable.',
-  })
+  @RegisterDocs()
   async create(@Body() data: CreateUserDto, @Res() res: Response) {
     try {
       const isBlackListed = await this.pldService.verifyUser({
@@ -66,6 +54,7 @@ export class UsersController {
   }
 
   @Post('/login')
+  @LoginDocs()
   async login(@Body() data: LoginDto, @Res() res: Response) {
     const result = await this.usersService.login(data);
 
